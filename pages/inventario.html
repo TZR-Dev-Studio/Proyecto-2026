@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGRSI - Inventario</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="#">SGRSI</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarMenu">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard.html">Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="inventario.html">Inventario</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="tickets.html">Mesa de Ayuda</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="solicitudes.html">Solicitudes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="usuarios.html">Usuarios</a>
+                    </li>
+                </ul>
+                <span class="navbar-text text-white me-3" id="nombreUsuario"></span>
+                <button class="btn btn-outline-light btn-sm" id="btnCerrarSesion">Cerrar sesión</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+
+        <header class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="fs-4 fw-bold">Inventario y Préstamos</h1>
+                <p class="text-muted mb-0">Gestión de equipos y préstamos activos</p>
+            </div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoEquipo">
+                + Nuevo equipo
+            </button>
+        </header>
+
+        <!-- Tarjetas resumen -->
+        <section class="row g-3 mb-4">
+            <article class="col-12 col-sm-4">
+                <div class="card border-success h-100">
+                    <div class="card-body">
+                        <h2 class="card-title fs-6 text-muted">Disponibles</h2>
+                        <p class="display-6 fw-bold text-success" id="contadorDisponibles">0</p>
+                    </div>
+                </div>
+            </article>
+            <article class="col-12 col-sm-4">
+                <div class="card border-warning h-100">
+                    <div class="card-body">
+                        <h2 class="card-title fs-6 text-muted">Prestados</h2>
+                        <p class="display-6 fw-bold text-warning" id="contadorPrestados">0</p>
+                    </div>
+                </div>
+            </article>
+            <article class="col-12 col-sm-4">
+                <div class="card border-danger h-100">
+                    <div class="card-body">
+                        <h2 class="card-title fs-6 text-muted">En reparación</h2>
+                        <p class="display-6 fw-bold text-danger" id="contadorReparacion">0</p>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        <!-- Tabla equipos -->
+        <section class="card">
+            <div class="card-header">
+                <h2 class="fs-6 fw-bold mb-0">Equipos registrados</h2>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Nombre</th>
+                                <th scope="col">Tipo</th>
+                                <th scope="col">Marca</th>
+                                <th scope="col">Estado</th>
+                                <th scope="col">Ubicación</th>
+                                <th scope="col">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaEquipos"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal nuevo equipo -->
+    <div class="modal fade" id="modalNuevoEquipo" tabindex="-1" aria-labelledby="tituloModalEquipo" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5" id="tituloModalEquipo">Nuevo equipo</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formNuevoEquipo" novalidate>
+
+                        <div class="mb-3">
+                            <label for="nombreEquipo" class="form-label">Nombre del equipo</label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                id="nombreEquipo"
+                                placeholder="Ej: Notebook Dell 01"
+                                required
+                            >
+                            <div class="invalid-feedback">Ingresá el nombre del equipo.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="tipoEquipo" class="form-label">Tipo</label>
+                            <select class="form-select" id="tipoEquipo" required>
+                                <option value="">Seleccioná un tipo</option>
+                                <option value="notebook">Notebook</option>
+                                <option value="pc">PC de escritorio</option>
+                                <option value="proyector">Proyector</option>
+                                <option value="impresora">Impresora</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                            <div class="invalid-feedback">Seleccioná el tipo de equipo.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="marcaEquipo" class="form-label">Marca</label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                id="marcaEquipo"
+                                placeholder="Ej: Dell, HP, Lenovo"
+                                required
+                            >
+                            <div class="invalid-feedback">Ingresá la marca del equipo.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="ubicacionEquipo" class="form-label">Ubicación</label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                id="ubicacionEquipo"
+                                placeholder="Ej: Lab 3, Depósito"
+                                required
+                            >
+                            <div class="invalid-feedback">Ingresá la ubicación del equipo.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="estadoEquipo" class="form-label">Estado</label>
+                            <select class="form-select" id="estadoEquipo" required>
+                                <option value="">Seleccioná un estado</option>
+                                <option value="disponible">Disponible</option>
+                                <option value="prestado">Prestado</option>
+                                <option value="reparacion">En reparación</option>
+                            </select>
+                            <div class="invalid-feedback">Seleccioná el estado del equipo.</div>
+                        </div>
+
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnGuardarEquipo">Guardar equipo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center text-muted py-3 mt-4 border-top">
+        <small>SGRSI &copy; 2026 - TZR DevStudio - ITI CETP</small>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/validaciones.js"></script>
+    <script src="../assets/js/dom.js"></script>
+    <script src="../assets/js/inventario.js"></script>
+</body>
+</html>
