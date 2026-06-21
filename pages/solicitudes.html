@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGRSI - Solicitudes de Servicio</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="#">SGRSI</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarMenu">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard.html">Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="inventario.html">Préstamos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="tickets.html">Mesa de Ayuda</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="solicitudes.html">Solicitudes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="usuarios.html">Usuarios</a>
+                    </li>
+                </ul>
+                <span class="navbar-text text-white me-3" id="nombreUsuario"></span>
+                <button class="btn btn-outline-light btn-sm" id="btnCerrarSesion">Cerrar sesión</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+
+        <header class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="fs-4 fw-bold">Solicitudes de Servicio</h1>
+                <p class="text-muted mb-0">Pedidos de instalación de software o preparación de laboratorios</p>
+            </div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaSolicitud">
+                + Nueva solicitud
+            </button>
+        </header>
+
+        <!-- Tabla solicitudes -->
+        <section class="card">
+            <div class="card-header">
+                <h2 class="fs-6 fw-bold mb-0">Solicitudes registradas</h2>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Docente</th>
+                                <th scope="col">Tipo</th>
+                                <th scope="col">Descripción</th>
+                                <th scope="col">Laboratorio</th>
+                                <th scope="col">Fecha solicitada</th>
+                                <th scope="col">Estado</th>
+                                <th scope="col">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaSolicitudes"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal nueva solicitud -->
+    <div class="modal fade" id="modalNuevaSolicitud" tabindex="-1" aria-labelledby="tituloModalSolicitud" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5" id="tituloModalSolicitud">Nueva solicitud de servicio</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formNuevaSolicitud" novalidate>
+
+                        <div class="mb-3">
+                            <label for="docenteSolicitud" class="form-label">Nombre del docente</label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                id="docenteSolicitud"
+                                placeholder="Ej: Prof. González"
+                                required
+                            >
+                            <div class="invalid-feedback">Ingresá el nombre del docente.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="tipoSolicitud" class="form-label">Tipo de solicitud</label>
+                            <select class="form-select" id="tipoSolicitud" required>
+                                <option value="">Seleccioná un tipo</option>
+                                <option value="instalacion">Instalación de software</option>
+                                <option value="laboratorio">Preparación de laboratorio</option>
+                                <option value="configuracion">Configuración de equipos</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                            <div class="invalid-feedback">Seleccioná el tipo de solicitud.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="descripcionSolicitud" class="form-label">Descripción</label>
+                            <textarea 
+                                class="form-control" 
+                                id="descripcionSolicitud" 
+                                rows="3"
+                                placeholder="Describí lo que necesitás"
+                                required
+                                minlength="10"
+                            ></textarea>
+                            <div class="invalid-feedback">La descripción debe tener al menos 10 caracteres.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="laboratorioSolicitud" class="form-label">Laboratorio / Aula</label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                id="laboratorioSolicitud"
+                                placeholder="Ej: Lab 3, Aula 5"
+                                required
+                            >
+                            <div class="invalid-feedback">Ingresá el laboratorio o aula.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="fechaSolicitud" class="form-label">Fecha en que se necesita</label>
+                            <input 
+                                type="date" 
+                                class="form-control" 
+                                id="fechaSolicitud"
+                                required
+                            >
+                            <div class="invalid-feedback">Seleccioná una fecha.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="urgenciaSolicitud" class="form-label">Urgencia</label>
+                            <select class="form-select" id="urgenciaSolicitud" required>
+                                <option value="">Seleccioná la urgencia</option>
+                                <option value="alta">Alta</option>
+                                <option value="media">Media</option>
+                                <option value="baja">Baja</option>
+                            </select>
+                            <div class="invalid-feedback">Seleccioná la urgencia.</div>
+                        </div>
+
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnGuardarSolicitud">Guardar solicitud</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center text-muted py-3 mt-4 border-top">
+        <small>SGRSI &copy; 2026 - TZR DevStudio - ITI CETP</small>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/validaciones.js"></script>
+    <script src="../assets/js/dom.js"></script>
+    <script src="../assets/js/solicitudes.js"></script>
+</body>
+</html>
