@@ -1,0 +1,53 @@
+/* Variables de color del proyecto */
+:root {
+    --color-primario: #0d6efd;
+    --color-fondo: #f8f9fa;
+    --color-texto-suave: #6c757d;
+}
+
+/* Estilos generales */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--color-fondo);
+}
+
+/* Navbar */
+.navbar-brand {
+    letter-spacing: 1px;
+    font-size: 1.3rem;
+}
+
+/* Cards con hover */
+.card {
+    transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Tablas */
+.table th {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Footer */
+footer {
+    font-size: 0.85rem;
+}
+
+/* Responsive: en móvil los botones de acción ocupan todo el ancho */
+@media (max-width: 576px) {
+    .btn-sm {
+        width: 100%;
+        margin-bottom: 4px;
+    }
+
+    header.d-flex {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}
