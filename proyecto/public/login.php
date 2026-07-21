@@ -59,6 +59,14 @@
                 </div>
                 <?php endif; ?>
 
+                <?php if (!empty($_GET["mensaje"])): ?>
+<div class="mb-3">
+    <div class="alert alert-success" role="alert">
+        <?php echo htmlspecialchars($_GET["mensaje"]); ?>
+    </div>
+</div>
+<?php endif; ?>
+
                 <button type="submit" class="btn btn-primary w-100">Ingresar</button>
             </form>
 

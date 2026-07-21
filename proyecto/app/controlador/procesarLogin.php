@@ -53,6 +53,9 @@ if ($_SESSION["administrador"] && $_SESSION["tecnico"] && $_SESSION["solicitante
     header("Location: tecnico.php");
 } elseif ($_SESSION["solicitante"]) {
     header("Location: solicitante.php");
+} else {
+    $mensaje = "Acceso Denegado: Usuario sin roles asignados";
+    header("Location: login.php?" . "error=" . $mensaje);
 }
 exit;
 ?>
