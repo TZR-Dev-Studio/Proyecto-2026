@@ -29,8 +29,4 @@ class ConectorPDO
         $this->conexion = null;
     }
 };
-
-//$ConectorPDO = new ConectorPDO ("localhost", "root", "", "sgrsi");
-//$ConectorPDO->establecerConexion();
-
 ?>

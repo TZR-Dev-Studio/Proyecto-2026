@@ -4,14 +4,12 @@ require_once __DIR__ . "/../modelo/AccesoDatosUsuario.php";
 require_once __DIR__ . "/../modelo/Usuario.php";
 require_once __DIR__ . "/../modelo/Login.php";
 
-//Comprueba que el formulario haya sido enviado mediante POST
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     $mensaje = "Acceso Denegado: Petición incorrecta";
     header("Location: login.php?" . "error=" . $mensaje);
     exit;
 }
 
-//Recupera las credenciales provenientes del formulario
 $usuario = trim($_POST["usuario"] ?? "");
 $clave = $_POST["password"] ?? "";
 
@@ -23,7 +21,6 @@ $conexion = $conectorPDO->establecerConexion();
 $usuarioAutenticado = $login->autenticar($usuario, $clave);
 $conectorPDO->desconectar();
 
-//Si las credenciales no coinciden, muestra el error y detiene el proceso
 if ($usuarioAutenticado === null) {
     $mensaje = "Acceso Denegado: El usuario o la contraseña son incorrectos.";
     header("Location: login.php?" . "error=" . $mensaje);
@@ -38,7 +35,6 @@ $_SESSION["administrador"] = $usuarioAutenticado->esAdministrador();
 $_SESSION["tecnico"] = $usuarioAutenticado->esTecnico();
 $_SESSION["solicitante"] = $usuarioAutenticado->esSolicitante();
 
-//Contempla primero los casos de usuarios con múltiples roles
 if ($_SESSION["administrador"] && $_SESSION["tecnico"] && $_SESSION["solicitante"]) {
     header("Location: panelRoles.php");
 } elseif ($_SESSION["administrador"] && $_SESSION["tecnico"]) {
