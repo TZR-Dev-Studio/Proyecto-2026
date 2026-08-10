@@ -1,63 +1,57 @@
-// Datos de prueba
-let tickets = [
-    { id: 1, descripcion: 'PC sin encender', laboratorio: 'Lab 3', estado: 'pendiente', prioridad: 'alta', fecha: '20/06/2026' },
-    { id: 2, descripcion: 'Proyector sin señal', laboratorio: 'Aula 5', estado: 'en proceso', prioridad: 'media', fecha: '19/06/2026' },
-    { id: 3, descripcion: 'Teclado roto', laboratorio: 'Lab 1', estado: 'resuelto', prioridad: 'baja', fecha: '18/06/2026' }
-];
+// ---------------------------------------------------------------------
+// Los tickets ahora se cargan desde la base de datos a través de PHP
+// (ver app/controlador/cargarTickets.php + app/vista/tecnico.php).
+// Por eso se desactivan las funciones que antes generaban los datos
+// y las filas de la tabla desde JavaScript.
+// ---------------------------------------------------------------------
 
-let contadorId = 4;
-
-function getBadgeEstado(estado) {
-    const badges = {
-        'pendiente': '<span class="badge bg-warning text-dark">Pendiente</span>',
-        'en proceso': '<span class="badge bg-primary">En proceso</span>',
-        'resuelto': '<span class="badge bg-success">Resuelto</span>'
-    };
-    return badges[estado] || estado;
-}
-
-function getBadgePrioridad(prioridad) {
-    const badges = {
-        'alta': '<span class="badge bg-danger">Alta</span>',
-        'media': '<span class="badge bg-warning text-dark">Media</span>',
-        'baja': '<span class="badge bg-success">Baja</span>'
-    };
-    return badges[prioridad] || prioridad;
-}
-
-function renderizarTickets(lista) {
-    const tbody = document.getElementById('tablaTickets');
-    if (!tbody) return;
-
-    if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">No hay tickets para mostrar</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = lista.map(function(ticket) {
-        return '<tr>' +
-            '<td>' + ticket.id + '</td>' +
-            '<td>' + ticket.descripcion + '</td>' +
-            '<td>' + ticket.laboratorio + '</td>' +
-            '<td>' + getBadgeEstado(ticket.estado) + '</td>' +
-            '<td>' + getBadgePrioridad(ticket.prioridad) + '</td>' +
-            '<td>' + ticket.fecha + '</td>' +
-            '<td>' +
-                '<button class="btn btn-sm btn-outline-danger" onclick="eliminarTicket(' + ticket.id + ')">Eliminar</button>' +
-            '</td>' +
-        '</tr>';
-    }).join('');
-}
-
-function eliminarTicket(id) {
-    tickets = tickets.filter(function(t) { return t.id !== id; });
-    renderizarTickets(tickets);
-}
+// let tickets = [
+//     { id: 1, descripcion: 'PC sin encender', laboratorio: 'Lab 3', estado: 'pendiente', prioridad: 'alta', fecha: '20/06/2026' },
+//     { id: 2, descripcion: 'Proyector sin señal', laboratorio: 'Aula 5', estado: 'en proceso', prioridad: 'media', fecha: '19/06/2026' },
+//     { id: 3, descripcion: 'Teclado roto', laboratorio: 'Lab 1', estado: 'resuelto', prioridad: 'baja', fecha: '18/06/2026' }
+// ];
+//
+// let contadorId = 4;
+//
+// function getBadgeEstado(estado) { ... } // ahora resuelto en PHP (badgeEstado())
+// function getBadgePrioridad(prioridad) { ... } // ahora resuelto en PHP (badgePrioridad())
+//
+// function renderizarTickets(lista) {
+//     // Ya no se regenera el contenido de <tbody id="tablaTickets">
+//     // desde JS: esas filas las genera app/vista/tecnico.php con PHP.
+// }
+//
+// function eliminarTicket(id) {
+//     // Desactivado: eliminaría filas creadas por PHP sin tocar la
+//     // base de datos. Se implementará como acción de servidor
+//     // (DELETE) en una próxima entrega.
+// }
 
 document.addEventListener('DOMContentLoaded', function() {
 
-    renderizarTickets(tickets);
+    // Filtra las filas que ya trajo el servidor (renderizadas por PHP),
+    // en vez de volver a generarlas desde un arreglo en memoria.
+    const formFiltros = document.getElementById('formFiltros');
+    if (formFiltros) {
+        formFiltros.addEventListener('submit', function(e) {
+            e.preventDefault();
 
+            const estado = document.getElementById('filtroEstado').value;
+            const prioridad = document.getElementById('filtroPrioridad').value;
+
+            const filas = document.querySelectorAll('#tablaTickets tr[data-estado]');
+
+            filas.forEach(function(fila) {
+                const coincideEstado = estado === '' || fila.dataset.estado === estado;
+                const coincidePrioridad = prioridad === '' || fila.dataset.prioridad === prioridad;
+                fila.classList.toggle('d-none', !(coincideEstado && coincidePrioridad));
+            });
+        });
+    }
+
+    // Validación del formulario del modal "Nuevo ticket".
+    // El guardado contra la base de datos (INSERT) se implementará en
+    // una próxima entrega; por ahora solo se valida el formulario.
     const btnGuardar = document.getElementById('btnGuardarTicket');
     if (!btnGuardar) return;
 
@@ -91,42 +85,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!valido) return;
 
-        const nuevoTicket = {
-            id: contadorId++,
-            descripcion: descripcion.value.trim(),
-            laboratorio: laboratorio.value.trim(),
-            estado: 'pendiente',
-            prioridad: prioridad.value,
-            fecha: new Date().toLocaleDateString('es-UY')
-        };
+        // TODO (próxima entrega): enviar estos datos al servidor
+        // (por ejemplo mediante un formulario POST o fetch) para que
+        // se inserten en la tabla TICKET y luego recargar la página.
 
-        tickets.push(nuevoTicket);
-        renderizarTickets(tickets);
-
-        // Cerramos el modal y limpiamos el formulario
         const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoTicket'));
         modal.hide();
         document.getElementById('formNuevoTicket').reset();
-        limpiarValidacion(descripcion);
-        limpiarValidacion(laboratorio);
-        limpiarValidacion(prioridad);
-    });
-
-    // Filtros
-    const formFiltros = document.getElementById('formFiltros');
-    if (formFiltros) {
-        formFiltros.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const estado = document.getElementById('filtroEstado').value;
-            const prioridad = document.getElementById('filtroPrioridad').value;
-
-            const filtrados = tickets.filter(function(t) {
-                return (estado === '' || t.estado === estado) &&
-                       (prioridad === '' || t.prioridad === prioridad);
-            });
-
-            renderizarTickets(filtrados);
+        [descripcion, laboratorio, prioridad].forEach(function(campo) {
+            limpiarValidacion(campo);
         });
-    }
+    });
 
 });
