@@ -1,62 +1,142 @@
-// Datos de prueba
-let tickets = [
-    { id: 1, descripcion: 'PC sin encender', laboratorio: 'Lab 3', estado: 'pendiente', prioridad: 'alta', fecha: '20/06/2026' },
-    { id: 2, descripcion: 'Proyector sin señal', laboratorio: 'Aula 5', estado: 'en proceso', prioridad: 'media', fecha: '19/06/2026' },
-    { id: 3, descripcion: 'Teclado roto', laboratorio: 'Lab 1', estado: 'resuelto', prioridad: 'baja', fecha: '18/06/2026' }
-];
+const URL_API_TICKETS = 'api/tickets.php';
 
-let contadorId = 4;
-
-function getBadgeEstado(estado) {
+function crearBadgeEstado(estado) {
     const badges = {
-        'pendiente': '<span class="badge bg-warning text-dark">Pendiente</span>',
-        'en proceso': '<span class="badge bg-primary">En proceso</span>',
-        'resuelto': '<span class="badge bg-success">Resuelto</span>'
+        'pendiente': { texto: 'Pendiente', clase: 'bg-warning text-dark' },
+        'en proceso': { texto: 'En proceso', clase: 'bg-primary' },
+        'resuelto': { texto: 'Resuelto', clase: 'bg-success' }
     };
-    return badges[estado] || estado;
+    const badge = badges[estado];
+
+    const span = document.createElement('span');
+    if (badge) {
+        span.className = 'badge ' + badge.clase;
+        span.textContent = badge.texto;
+    } else {
+        span.textContent = estado;
+    }
+    return span;
 }
 
-function getBadgePrioridad(prioridad) {
+function crearBadgePrioridad(prioridad) {
     const badges = {
-        'alta': '<span class="badge bg-danger">Alta</span>',
-        'media': '<span class="badge bg-warning text-dark">Media</span>',
-        'baja': '<span class="badge bg-success">Baja</span>'
+        'alta': { texto: 'Alta', clase: 'bg-danger' },
+        'media': { texto: 'Media', clase: 'bg-warning text-dark' },
+        'baja': { texto: 'Baja', clase: 'bg-success' }
     };
-    return badges[prioridad] || prioridad;
+    const badge = badges[prioridad];
+
+    const span = document.createElement('span');
+    if (badge) {
+        span.className = 'badge ' + badge.clase;
+        span.textContent = badge.texto;
+    } else {
+        span.textContent = prioridad;
+    }
+    return span;
 }
 
-function renderizarTickets(lista) {
+function mostrarAlertaTickets(tipo, mensaje) {
+    const contenedor = document.getElementById('alertaTickets');
+    if (!contenedor) return;
+    const div = document.createElement('div');
+    div.className = 'alert alert-' + tipo;
+    div.setAttribute('role', 'alert');
+    div.textContent = mensaje;
+    contenedor.replaceChildren(div);
+}
+
+function renderizarTickets(tickets) {
     const tbody = document.getElementById('tablaTickets');
     if (!tbody) return;
 
-    if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">No hay tickets para mostrar</td></tr>';
+    if (tickets.length === 0) {
+        const filaVacia = document.createElement('tr');
+        const celdaVacia = document.createElement('td');
+        celdaVacia.colSpan = 7;
+        celdaVacia.className = 'text-center text-muted py-3';
+        celdaVacia.textContent = 'No hay tickets registrados';
+        filaVacia.appendChild(celdaVacia);
+        tbody.replaceChildren(filaVacia);
         return;
     }
 
-    tbody.innerHTML = lista.map(function(ticket) {
-        return '<tr>' +
-            '<td>' + ticket.id + '</td>' +
-            '<td>' + ticket.descripcion + '</td>' +
-            '<td>' + ticket.laboratorio + '</td>' +
-            '<td>' + getBadgeEstado(ticket.estado) + '</td>' +
-            '<td>' + getBadgePrioridad(ticket.prioridad) + '</td>' +
-            '<td>' + ticket.fecha + '</td>' +
-            '<td>' +
-                '<button class="btn btn-sm btn-outline-danger" onclick="eliminarTicket(' + ticket.id + ')">Eliminar</button>' +
-            '</td>' +
-        '</tr>';
-    }).join('');
+    const filas = tickets.map(function(ticket) {
+        const fila = document.createElement('tr');
+        fila.setAttribute('data-estado', ticket.estado);
+        fila.setAttribute('data-prioridad', ticket.prioridad);
+
+        const celdaId = document.createElement('td');
+        celdaId.textContent = ticket.id_ticket;
+
+        const celdaDescripcion = document.createElement('td');
+        celdaDescripcion.textContent = ticket.descripcion;
+
+        const celdaLaboratorio = document.createElement('td');
+        celdaLaboratorio.textContent = ticket.laboratorio;
+
+        const celdaEstado = document.createElement('td');
+        celdaEstado.appendChild(crearBadgeEstado(ticket.estado));
+
+        const celdaPrioridad = document.createElement('td');
+        celdaPrioridad.appendChild(crearBadgePrioridad(ticket.prioridad));
+
+        const celdaFecha = document.createElement('td');
+        celdaFecha.textContent = ticket.fecha_inicio;
+
+        const celdaCreadoPor = document.createElement('td');
+        celdaCreadoPor.textContent = ticket.creadoPor;
+
+        fila.appendChild(celdaId);
+        fila.appendChild(celdaDescripcion);
+        fila.appendChild(celdaLaboratorio);
+        fila.appendChild(celdaEstado);
+        fila.appendChild(celdaPrioridad);
+        fila.appendChild(celdaFecha);
+        fila.appendChild(celdaCreadoPor);
+
+        return fila;
+    });
+
+    tbody.replaceChildren(...filas);
 }
 
-function eliminarTicket(id) {
-    tickets = tickets.filter(function(t) { return t.id !== id; });
-    renderizarTickets(tickets);
+function obtenerTickets() {
+    fetch(URL_API_TICKETS, { method: 'GET', credentials: 'same-origin' })
+        .then(function(respuesta) {
+            return respuesta.json().then(function(datos) {
+                if (!respuesta.ok) throw new Error(datos.error || 'No se pudieron obtener los tickets.');
+                return datos;
+            });
+        })
+        .then(function(tickets) {
+            renderizarTickets(tickets);
+        })
+        .catch(function(error) {
+            mostrarAlertaTickets('danger', error.message);
+        });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
 
-    renderizarTickets(tickets);
+    obtenerTickets();
+
+    const formFiltros = document.getElementById('formFiltros');
+    if (formFiltros) {
+        formFiltros.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const estado = document.getElementById('filtroEstado').value;
+            const prioridad = document.getElementById('filtroPrioridad').value;
+            const filas = document.querySelectorAll('#tablaTickets tr[data-estado]');
+
+            filas.forEach(function(fila) {
+                const coincideEstado = estado === '' || fila.dataset.estado === estado;
+                const coincidePrioridad = prioridad === '' || fila.dataset.prioridad === prioridad;
+                fila.classList.toggle('d-none', !(coincideEstado && coincidePrioridad));
+            });
+        });
+    }
 
     const btnGuardar = document.getElementById('btnGuardarTicket');
     if (!btnGuardar) return;
@@ -91,42 +171,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!valido) return;
 
-        const nuevoTicket = {
-            id: contadorId++,
-            descripcion: descripcion.value.trim(),
-            laboratorio: laboratorio.value.trim(),
-            estado: 'pendiente',
-            prioridad: prioridad.value,
-            fecha: new Date().toLocaleDateString('es-UY')
-        };
-
-        tickets.push(nuevoTicket);
-        renderizarTickets(tickets);
-
-        // Cerramos el modal y limpiamos el formulario
-        const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoTicket'));
-        modal.hide();
-        document.getElementById('formNuevoTicket').reset();
-        limpiarValidacion(descripcion);
-        limpiarValidacion(laboratorio);
-        limpiarValidacion(prioridad);
-    });
-
-    // Filtros
-    const formFiltros = document.getElementById('formFiltros');
-    if (formFiltros) {
-        formFiltros.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const estado = document.getElementById('filtroEstado').value;
-            const prioridad = document.getElementById('filtroPrioridad').value;
-
-            const filtrados = tickets.filter(function(t) {
-                return (estado === '' || t.estado === estado) &&
-                       (prioridad === '' || t.prioridad === prioridad);
+        fetch(URL_API_TICKETS, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                descripcion: descripcion.value.trim(),
+                laboratorio: laboratorio.value.trim(),
+                prioridad: prioridad.value
+            })
+        })
+            .then(function(respuesta) {
+                return respuesta.json().then(function(datos) {
+                    if (!respuesta.ok) throw new Error(datos.error || 'No se pudo registrar el ticket.');
+                    return datos;
+                });
+            })
+            .then(function(datos) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoTicket'));
+                modal.hide();
+                document.getElementById('formNuevoTicket').reset();
+                [descripcion, laboratorio, prioridad].forEach(function(campo) {
+                    limpiarValidacion(campo);
+                });
+                mostrarAlertaTickets('success', datos.mensaje);
+                obtenerTickets();
+            })
+            .catch(function(error) {
+                mostrarAlertaTickets('danger', error.message);
             });
-
-            renderizarTickets(filtrados);
-        });
-    }
+    });
 
 });

@@ -1,24 +1,12 @@
 <?php
 
-/**
- * Clase que recupera credenciales y roles del usuario desde la base de datos.
- */
 class AccesoDatosUsuario {
     private PDO $conexion;
 
-    /**
-     * Constructor parametrizado que recibe una conexión a la base de datos.
-     * @param PDO $conexion La conexion a la base de datos. PRECONDICION: No debe ser NULL.
-     */
     public function __construct (PDO $conexion) {
         $this->conexion = $conexion;
     }
 
-    /**
-     * Busca un usuario por su nombre de usuario y recupera sus roles.
-     * @param string $usuario El nombre de usuario.
-     * @return Usuario|null Los datos del usuario, retorna su objeto si existe, null en caso contrario.
-     */
     public function buscarUsuario(string $usuario): ?Usuario
     {
         $sql = "
@@ -27,24 +15,15 @@ class AccesoDatosUsuario {
                 u.password AS claveHash,
                 u.activo,
                 GROUP_CONCAT(r.nombre_rol) AS roles
-
             FROM USUARIO AS u
-
-            LEFT JOIN USUARIO_ROL AS ur
-                ON ur.id_usuario = u.id_usuario
-
-            LEFT JOIN ROL AS r
-                ON r.id_rol = ur.id_rol
-
+            LEFT JOIN USUARIO_ROL AS ur ON ur.id_usuario = u.id_usuario
+            LEFT JOIN ROL AS r ON r.id_rol = ur.id_rol
             WHERE u.nombre_usuario = :usuario
-
             GROUP BY u.id_usuario
         ";
 
         $consulta = $this->conexion->prepare($sql);
-
         $consulta->execute(["usuario" => $usuario]);
-
         $datos = $consulta->fetch(PDO::FETCH_ASSOC);
 
         if ($datos === false) {
@@ -60,6 +39,55 @@ class AccesoDatosUsuario {
             $roles
         );
     }
-}
 
+    public function existeUsuario(string $nombreUsuario, string $email): bool
+    {
+        $sql = "SELECT id_usuario FROM USUARIO WHERE nombre_usuario = :usuario OR email = :email";
+        $consulta = $this->conexion->prepare($sql);
+        $consulta->execute(["usuario" => $nombreUsuario, "email" => $email]);
+        return $consulta->fetch() !== false;
+    }
+
+    public function crearUsuario(string $nombreCompleto, string $nombreUsuario, string $claveHash, string $email): int
+    {
+        $sql = "
+            INSERT INTO USUARIO (nombre_completo, nombre_usuario, password, email)
+            VALUES (:nombreCompleto, :nombreUsuario, :claveHash, :email)
+        ";
+        $consulta = $this->conexion->prepare($sql);
+        $consulta->execute([
+            "nombreCompleto" => $nombreCompleto,
+            "nombreUsuario" => $nombreUsuario,
+            "claveHash" => $claveHash,
+            "email" => $email,
+        ]);
+        return (int) $this->conexion->lastInsertId();
+    }
+
+    public function asignarRol(int $idUsuario, string $nombreRol): bool
+    {
+        $sql = "
+            INSERT INTO USUARIO_ROL (id_usuario, id_rol)
+            SELECT :idUsuario, id_rol FROM ROL WHERE nombre_rol = :nombreRol
+        ";
+        $consulta = $this->conexion->prepare($sql);
+        return $consulta->execute(["idUsuario" => $idUsuario, "nombreRol" => $nombreRol]);
+    }
+
+    public function listarUsuarios(): array
+    {
+        $sql = "
+            SELECT
+                u.id_usuario, u.nombre_usuario, u.nombre_completo, u.email,
+                GROUP_CONCAT(r.nombre_rol) AS roles
+            FROM USUARIO AS u
+            LEFT JOIN USUARIO_ROL AS ur ON ur.id_usuario = u.id_usuario
+            LEFT JOIN ROL AS r ON r.id_rol = ur.id_rol
+            GROUP BY u.id_usuario
+            ORDER BY u.id_usuario
+        ";
+        $consulta = $this->conexion->query($sql);
+        return $consulta->fetchAll(PDO::FETCH_ASSOC);
+    }
+}
 ?>

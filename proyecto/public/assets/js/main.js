@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const inputPassword = document.getElementById('password');
     const mensajeError = document.getElementById('mensajeError');
 
+    if (!formLogin) return;
+
     // Validación en tiempo real mientras el usuario escribe
     inputUsuario.addEventListener('input', function() {
         if (campoVacio(this.value)) {

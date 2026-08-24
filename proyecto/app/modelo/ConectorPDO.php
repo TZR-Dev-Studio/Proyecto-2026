@@ -16,12 +16,8 @@ class ConectorPDO
     }
 
     public function establecerConexion(): PDO {
-        try {
-            $this->conexion = new PDO("mysql:host=$this->servername;dbname=$this->dbname", $this->username, $this->password);
-            $this->conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        } catch (PDOException $e) {
-            echo "Error al conectar..." . $e->getMessage();
-        }
+        $this->conexion = new PDO("mysql:host=$this->servername;dbname=$this->dbname", $this->username, $this->password);
+        $this->conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         return $this->conexion;
     }
 
@@ -29,8 +25,4 @@ class ConectorPDO
         $this->conexion = null;
     }
 };
-
-//$ConectorPDO = new ConectorPDO ("localhost", "root", "", "sgrsi");
-//$ConectorPDO->establecerConexion();
-
 ?>
