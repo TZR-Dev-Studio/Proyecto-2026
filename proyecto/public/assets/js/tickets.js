@@ -1,61 +1,64 @@
-document.addEventListener('DOMContentLoaded', function() {
+const URL_API = "../api/tickets.php";
 
-    const formFiltros = document.getElementById('formFiltros');
-    if (formFiltros) {
-        formFiltros.addEventListener('submit', function(e) {
-            e.preventDefault();
+const cuerpoTabla = document.querySelector("#tabla-tickets tbody");
+const cajaMensaje = document.getElementById("mensaje");
 
-            const estado = document.getElementById('filtroEstado').value;
-            const prioridad = document.getElementById('filtroPrioridad').value;
-            const filas = document.querySelectorAll('#tablaTickets tr[data-estado]');
+function mostrarMensaje(texto) {
+    cajaMensaje.textContent = texto;
+}
 
-            filas.forEach(function(fila) {
-                const coincideEstado = estado === '' || fila.dataset.estado === estado;
-                const coincidePrioridad = prioridad === '' || fila.dataset.prioridad === prioridad;
-                fila.classList.toggle('d-none', !(coincideEstado && coincidePrioridad));
-            });
-        });
+function celda(texto) {
+    const td = document.createElement("td");
+    td.textContent = texto ?? "";
+    return td;
+}
+
+function dibujarTickets(tickets) {
+    cuerpoTabla.replaceChildren();
+
+    if (tickets.length === 0) {
+        mostrarMensaje("No hay tickets registrados.");
+        return;
     }
 
-    const btnGuardar = document.getElementById('btnGuardarTicket');
-    if (!btnGuardar) return;
+    tickets.forEach(function(ticket) {
+        const fila = document.createElement("tr");
 
-    btnGuardar.addEventListener('click', function() {
+        fila.append(
+            celda(ticket.id_ticket),
+            celda(ticket.descripcion),
+            celda(ticket.laboratorio),
+            celda(ticket.prioridad),
+            celda(ticket.fecha_inicio),
+            celda(ticket.fecha_limite),
+            celda(ticket.estado),
+            celda(ticket.creadoPor)
+        );
 
-        const descripcion = document.getElementById('descripcionTicket');
-        const laboratorio = document.getElementById('laboratorioTicket');
-        const prioridad = document.getElementById('prioridadTicket');
-        let valido = true;
-
-        if (campoVacio(descripcion.value) || !longitudMinima(descripcion.value, 10)) {
-            mostrarError(descripcion, 'La descripción debe tener al menos 10 caracteres.');
-            valido = false;
-        } else {
-            mostrarValido(descripcion);
-        }
-
-        if (campoVacio(laboratorio.value)) {
-            mostrarError(laboratorio, 'Ingresá el laboratorio o aula.');
-            valido = false;
-        } else {
-            mostrarValido(laboratorio);
-        }
-
-        if (campoVacio(prioridad.value)) {
-            mostrarError(prioridad, 'Seleccioná una prioridad.');
-            valido = false;
-        } else {
-            mostrarValido(prioridad);
-        }
-
-        if (!valido) return;
-
-        const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoTicket'));
-        modal.hide();
-        document.getElementById('formNuevoTicket').reset();
-        [descripcion, laboratorio, prioridad].forEach(function(campo) {
-            limpiarValidacion(campo);
-        });
+        cuerpoTabla.appendChild(fila);
     });
+}
 
-});
+async function cargarTickets() {
+    try {
+        const respuesta = await fetch(URL_API, {
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            },
+            credentials: "same-origin"
+        });
+
+        const json = await respuesta.json();
+
+        if (!respuesta.ok) {
+            throw new Error(json.mensaje || "Error " + respuesta.status);
+        }
+
+        dibujarTickets(json.datos.tickets);
+    } catch (error) {
+        mostrarMensaje("No se pudieron cargar los tickets: " + error.message);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", cargarTickets);
