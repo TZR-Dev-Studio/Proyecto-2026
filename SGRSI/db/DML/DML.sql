@@ -1,3 +1,0 @@
--- Datos ficticios para una base nueva VACIA.
--- Generar con: php db/DML/generarDatosPrueba.php > db/DML/datos_ficticios.sql
--- Inspeccionar antes de importar. No ejecutar semillas sobre datos existentes.
