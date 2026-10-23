@@ -1,149 +1,50 @@
-let usuarios = [
-    { id: 1, nombreCompleto: 'Jean Zarraga', usuario: 'admin', email: 'jean@iti.edu.uy', rol: 'administrador' },
-    { id: 2, nombreCompleto: 'Guzmán Troncone', usuario: 'tecnico', email: 'guzman@iti.edu.uy', rol: 'tecnico' },
-    { id: 3, nombreCompleto: 'Joaquín Rodríguez', usuario: 'solicitante', email: 'joaquin@iti.edu.uy', rol: 'solicitante' }
-];
-
-let contadorIdUsuario = 4;
-
-function getBadgeRol(rol) {
-    const badges = {
-        'administrador': '<span class="badge bg-danger">Administrador</span>',
-        'tecnico': '<span class="badge bg-primary">Técnico</span>',
-        'solicitante': '<span class="badge bg-success">Solicitante</span>'
-    };
-    return badges[rol] || rol;
+function nuevoUsuario() {
+    document.getElementById('formulario').reset();
+    document.getElementById('registro_id').value = '';
+    document.getElementById('nombreUsuario').disabled = false;
+    document.getElementById('password').required = true;
 }
-
-function renderizarUsuarios() {
-    const tbody = document.getElementById('tablaUsuarios');
-    if (!tbody) return;
-
-    if (usuarios.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No hay usuarios registrados</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = usuarios.map(function(u) {
-        return '<tr>' +
-            '<td>' + u.id + '</td>' +
-            '<td>' + u.usuario + '</td>' +
-            '<td>' + u.nombreCompleto + '</td>' +
-            '<td>' + getBadgeRol(u.rol) + '</td>' +
-            '<td>' + u.email + '</td>' +
-            '<td>' +
-                '<button class="btn btn-sm btn-outline-danger" onclick="eliminarUsuario(' + u.id + ')">Eliminar</button>' +
-            '</td>' +
-        '</tr>';
-    }).join('');
+function editarUsuario(fila) {
+    document.getElementById('registro_id').value = fila.id_usuario;
+    document.getElementById('nombreUsuario').value = fila.nombre_usuario;
+    document.getElementById('nombreUsuario').disabled = true;
+    document.getElementById('nombreCompleto').value = fila.nombre_completo;
+    document.getElementById('email').value = fila.email;
+    document.getElementById('activo').value = Number(fila.activo);
+    document.getElementById('password').value = '';
+    document.getElementById('password').required = false;
+    document.querySelectorAll('input[name="roles"]').forEach(function(campo) { campo.checked = fila.roles.includes(campo.value); });
+    document.getElementById('formulario').scrollIntoView();
 }
-
-function eliminarUsuario(id) {
-    // No permitimos eliminar al admin principal
-    const usuario = usuarios.find(function(u) { return u.id === id; });
-    if (usuario && usuario.usuario === 'admin') {
-        alert('No podés eliminar al administrador principal.');
-        return;
-    }
-    usuarios = usuarios.filter(function(u) { return u.id !== id; });
-    renderizarUsuarios();
-}
-
-function validarEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-
-    // Verificamos que sea administrador
-    const sesion = sessionStorage.getItem('usuarioActivo');
-    if (sesion) {
-        const usuarioActivo = JSON.parse(sesion);
-        if (usuarioActivo.rol !== 'administrador') {
-            // Ocultamos contenido y mostramos alerta
-            document.getElementById('contenidoAdmin').classList.add('d-none');
-            document.getElementById('alertaAcceso').classList.remove('d-none');
-            document.getElementById('btnNuevoUsuario').classList.add('d-none');
-        }
-    }
-
-    renderizarUsuarios();
-
-    // El botón abre el modal solo si es admin
-    const btnNuevo = document.getElementById('btnNuevoUsuario');
-    if (btnNuevo) {
-        btnNuevo.addEventListener('click', function() {
-            const modal = new bootstrap.Modal(document.getElementById('modalNuevoUsuario'));
-            modal.show();
+async function cargarUsuarios() {
+    const filas = (await llamarApi('usuarios')).data;
+    const listado = document.getElementById('listado'); listado.replaceChildren();
+    filas.forEach(function(fila) {
+        const tr = document.createElement('tr');
+        agregarCelda(tr, fila.id_usuario); agregarCelda(tr, fila.nombre_usuario);
+        agregarCelda(tr, fila.nombre_completo); agregarCelda(tr, fila.email);
+        agregarCelda(tr, fila.roles.map(function(rol) { return traducir(rol); }).join(', '));
+        agregarCelda(tr, traducir(Number(fila.activo) ? 'Sí' : 'No'));
+        const acciones = document.createElement('td');
+        botonFila(acciones, 'Editar', function() { editarUsuario(fila); });
+        if (Number(fila.activo)) botonFila(acciones, 'Dar de baja', async function() {
+            if (!confirm(traducir('¿Registrar baja lógica?'))) return;
+            try { const r = await llamarApi('usuarios', 'DELETE', {}, fila.id_usuario); mostrarMensaje(r.message); await cargarUsuarios(); } catch(e) { mostrarMensaje(e.message, true); }
         });
-    }
-
-    const btnGuardar = document.getElementById('btnGuardarUsuario');
-    if (!btnGuardar) return;
-
-    btnGuardar.addEventListener('click', function() {
-
-        const nombreCompleto = document.getElementById('nombreCompleto');
-        const nombreUsuario = document.getElementById('nombreUsuario');
-        const email = document.getElementById('emailUsuario');
-        const rol = document.getElementById('rolUsuario');
-        const password = document.getElementById('passwordUsuario');
-        let valido = true;
-
-        if (campoVacio(nombreCompleto.value)) {
-            mostrarError(nombreCompleto, 'Ingresá el nombre completo.');
-            valido = false;
-        } else {
-            mostrarValido(nombreCompleto);
-        }
-
-        if (campoVacio(nombreUsuario.value) || !longitudMinima(nombreUsuario.value, 3)) {
-            mostrarError(nombreUsuario, 'El usuario debe tener al menos 3 caracteres.');
-            valido = false;
-        } else {
-            mostrarValido(nombreUsuario);
-        }
-
-        if (campoVacio(email.value) || !validarEmail(email.value)) {
-            mostrarError(email, 'Ingresá un email válido.');
-            valido = false;
-        } else {
-            mostrarValido(email);
-        }
-
-        if (campoVacio(rol.value)) {
-            mostrarError(rol, 'Seleccioná un rol.');
-            valido = false;
-        } else {
-            mostrarValido(rol);
-        }
-
-        if (campoVacio(password.value) || !longitudMinima(password.value, 6)) {
-            mostrarError(password, 'La contraseña debe tener al menos 6 caracteres.');
-            valido = false;
-        } else {
-            mostrarValido(password);
-        }
-
-        if (!valido) return;
-
-        const nuevoUsuario = {
-            id: contadorIdUsuario++,
-            nombreCompleto: nombreCompleto.value.trim(),
-            usuario: nombreUsuario.value.trim(),
-            email: email.value.trim(),
-            rol: rol.value
-        };
-
-        usuarios.push(nuevoUsuario);
-        renderizarUsuarios();
-
-        const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoUsuario'));
-        modal.hide();
-        document.getElementById('formNuevoUsuario').reset();
-        [nombreCompleto, nombreUsuario, email, rol, password].forEach(function(campo) {
-            limpiarValidacion(campo);
-        });
+        tr.appendChild(acciones); listado.appendChild(tr);
     });
-
+}
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('formulario');
+    document.getElementById('nuevo').addEventListener('click', nuevoUsuario);
+    form.addEventListener('submit', async function(evento) {
+        evento.preventDefault(); if (!form.reportValidity()) return;
+        const roles = [];
+        document.querySelectorAll('input[name="roles"]:checked').forEach(function(campo) { roles.push(campo.value); });
+        if (!roles.length) { mostrarMensaje('Seleccione al menos un rol.', true); return; }
+        const id = document.getElementById('registro_id').value;
+        const datos = {nombreUsuario: document.getElementById('nombreUsuario').value.trim(), nombreCompleto: document.getElementById('nombreCompleto').value.trim(), email: document.getElementById('email').value.trim(), password: document.getElementById('password').value, roles: roles, activo: Number(document.getElementById('activo').value)};
+        try { const r = await llamarApi('usuarios', id ? 'PUT' : 'POST', datos, id || null); mostrarMensaje(r.message); nuevoUsuario(); await cargarUsuarios(); } catch(e) { mostrarMensaje(e.message, true); }
+    });
+    cargarUsuarios().catch(function(e) { mostrarMensaje(e.message, true); });
 });

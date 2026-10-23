@@ -15,16 +15,16 @@ class ConectorPDO
         $this->conexion = null;
     }
 
-    public function establecerConexion(): PDO {
-        try {
-            $this->conexion = new PDO("mysql:host=$this->servername;dbname=$this->dbname", $this->username, $this->password);
-            $this->conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        } catch (PDOException $e) {
-            echo "Error al conectar..." . $e->getMessage();
-        }
-        return $this->conexion;
-    }
+public function establecerConexion(): PDO {
+    $this->conexion = new PDO(
+        "mysql:host=$this->servername;dbname=$this->dbname;charset=utf8mb4",
+        $this->username,
+        $this->password,
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
 
+    return $this->conexion;
+}
     public function desconectar() {
         $this->conexion = null;
     }
