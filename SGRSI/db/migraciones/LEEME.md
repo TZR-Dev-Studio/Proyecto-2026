@@ -1,0 +1,1 @@
+Para esta version, seguir LEEME_EJECUCION.md en la raiz. Las migraciones son aditivas y se aplican una sola vez despues de comprobar la estructura instalada. No ejecutar DDL.sql sobre datos existentes.

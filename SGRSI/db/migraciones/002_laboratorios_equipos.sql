@@ -1,0 +1,19 @@
+-- SOLO si LABORATORIO y EQUIPO no existen. Respaldar primero.
+USE sgrsi;
+CREATE TABLE LABORATORIO (
+ id_laboratorio INT AUTO_INCREMENT PRIMARY KEY,
+ nombre VARCHAR(80) NOT NULL UNIQUE,
+ ubicacion VARCHAR(120) NOT NULL,
+ activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+CREATE TABLE EQUIPO (
+ id_equipo INT AUTO_INCREMENT PRIMARY KEY,
+ codigo_inventario VARCHAR(30) NOT NULL UNIQUE,
+ descripcion VARCHAR(200) NOT NULL,
+ tipo VARCHAR(40) NOT NULL,
+ marca VARCHAR(80) NOT NULL,
+ condicion VARCHAR(20) NOT NULL DEFAULT 'operativo',
+ id_laboratorio INT NOT NULL,
+ activo BOOLEAN NOT NULL DEFAULT TRUE,
+ FOREIGN KEY (id_laboratorio) REFERENCES LABORATORIO(id_laboratorio)
+);
