@@ -1,9 +1,29 @@
 <?php
 /**
  * Vista: Mesa de Ayuda (Panel Técnico)
- * Los tickets se obtienen y se guardan desde el frontend mediante fetch()
- * contra proyecto/public/api/tickets.php. Esta vista no consulta la base de datos.
+ * Recibe la variable $tickets (arreglo asociativo) desde el controlador
+ * cargarTickets.php. No realiza consultas SQL.
  */
+
+function badgeEstado(string $estado): string {
+    $clases = [
+        "pendiente"   => "bg-warning text-dark",
+        "en proceso"  => "bg-primary",
+        "resuelto"    => "bg-success",
+    ];
+    $clase = $clases[$estado] ?? "bg-secondary";
+    return '<span class="badge ' . $clase . '">' . htmlspecialchars(ucfirst($estado)) . '</span>';
+}
+
+function badgePrioridad(string $prioridad): string {
+    $clases = [
+        "alta"  => "bg-danger",
+        "media" => "bg-warning text-dark",
+        "baja"  => "bg-success",
+    ];
+    $clase = $clases[$prioridad] ?? "bg-secondary";
+    return '<span class="badge ' . $clase . '">' . htmlspecialchars(ucfirst($prioridad)) . '</span>';
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -12,7 +32,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SGRSI - Mesa de Ayuda</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="../../public/assets/css/styles.css">
 </head>
 <body>
 
@@ -40,9 +60,7 @@
             </button>
         </header>
 
-        <div id="alertaTickets"></div>
-
-        <!-- Filtros (interactúan sobre las filas cargadas por fetch) -->
+        <!-- Filtros (interactúan sobre las filas ya cargadas por PHP) -->
         <section class="card mb-4">
             <div class="card-body">
                 <form id="formFiltros" class="row g-2">
@@ -71,7 +89,7 @@
             </div>
         </section>
 
-        <!-- Tabla de tickets: se completa con tickets.js mediante fetch al backend -->
+        <!-- Tabla de tickets: generada desde PHP con los datos de la base de datos -->
         <section class="card">
             <div class="card-header">
                 <h2 class="fs-6 fw-bold mb-0">Tickets registrados</h2>
@@ -91,11 +109,28 @@
                             </tr>
                         </thead>
                         <tbody id="tablaTickets">
-                            <tr>
-                                <td colspan="7" class="text-center text-muted py-3">
-                                    Cargando tickets...
-                                </td>
-                            </tr>
+                            <?php if (empty($tickets)): ?>
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-3">
+                                        No hay tickets registrados
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($tickets as $ticket): ?>
+                                    <tr
+                                        data-estado="<?php echo htmlspecialchars($ticket["estado"]); ?>"
+                                        data-prioridad="<?php echo htmlspecialchars($ticket["prioridad"]); ?>"
+                                    >
+                                        <td><?php echo htmlspecialchars($ticket["id_ticket"]); ?></td>
+                                        <td><?php echo htmlspecialchars($ticket["descripcion"]); ?></td>
+                                        <td><?php echo htmlspecialchars($ticket["laboratorio"]); ?></td>
+                                        <td><?php echo badgeEstado($ticket["estado"]); ?></td>
+                                        <td><?php echo badgePrioridad($ticket["prioridad"]); ?></td>
+                                        <td><?php echo htmlspecialchars($ticket["fecha_inicio"]); ?></td>
+                                        <td><?php echo htmlspecialchars($ticket["creadoPor"]); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -104,7 +139,7 @@
 
     </main>
 
-    <!-- Modal nuevo ticket (guarda en la base de datos mediante fetch a api/tickets.php) -->
+    <!-- Modal nuevo ticket (formulario visual; el guardado en base de datos se implementará en una próxima entrega) -->
     <div class="modal fade" id="modalNuevoTicket" tabindex="-1" aria-labelledby="tituloModal" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -120,7 +155,6 @@
                             <textarea
                                 class="form-control"
                                 id="descripcionTicket"
-                                name="descripcion"
                                 rows="3"
                                 placeholder="Describí el problema con el mayor detalle posible"
                                 required
@@ -137,7 +171,6 @@
                                 type="text"
                                 class="form-control"
                                 id="laboratorioTicket"
-                                name="laboratorio"
                                 placeholder="Ej: Lab 3, Aula 5"
                                 required
                             >
@@ -148,7 +181,7 @@
 
                         <div class="mb-3">
                             <label for="prioridadTicket" class="form-label">Prioridad</label>
-                            <select class="form-select" id="prioridadTicket" name="prioridad" required>
+                            <select class="form-select" id="prioridadTicket" required>
                                 <option value="">Seleccioná una prioridad</option>
                                 <option value="alta">Alta</option>
                                 <option value="media">Media</option>
@@ -174,7 +207,7 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/validaciones.js"></script>
-    <script src="assets/js/tickets.js"></script>
+    <script src="../../public/assets/js/validaciones.js"></script>
+    <script src="../../public/assets/js/tickets.js"></script>
 </body>
 </html>

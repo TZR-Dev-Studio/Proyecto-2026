@@ -1,121 +1,57 @@
-let solicitudes = [
-    { id: 1, docente: 'Prof. González', tipo: 'instalacion', descripcion: 'Instalar Python 3.12 en Lab 2', laboratorio: 'Lab 2', fecha: '25/06/2026', urgencia: 'alta', estado: 'pendiente' },
-    { id: 2, docente: 'Prof. Martínez', tipo: 'laboratorio', descripcion: 'Preparar Lab 1 para evaluación', laboratorio: 'Lab 1', fecha: '22/06/2026', urgencia: 'media', estado: 'en proceso' }
-];
-
-let contadorIdSolicitud = 3;
-
-function getBadgeUrgencia(urgencia) {
-    const badges = {
-        'alta': '<span class="badge bg-danger">Alta</span>',
-        'media': '<span class="badge bg-warning text-dark">Media</span>',
-        'baja': '<span class="badge bg-success">Baja</span>'
-    };
-    return badges[urgencia] || urgencia;
-}
-
-function getBadgeEstadoSolicitud(estado) {
-    const badges = {
-        'pendiente': '<span class="badge bg-warning text-dark">Pendiente</span>',
-        'en proceso': '<span class="badge bg-primary">En proceso</span>',
-        'resuelto': '<span class="badge bg-success">Resuelto</span>'
-    };
-    return badges[estado] || estado;
-}
-
-function renderizarSolicitudes() {
-    const tbody = document.getElementById('tablaSolicitudes');
-    if (!tbody) return;
-
-    if (solicitudes.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">No hay solicitudes registradas</td></tr>';
-        return;
+const formulario = document.getElementById('formulario');
+async function cargar() {
+    const respuesta = await llamarApi('solicitudes'); const filas = document.getElementById('filas'); filas.replaceChildren();
+    for (const dato of respuesta.data) {
+        const fila = document.createElement('tr'); const prioridad = dato.prioridad || dato.urgencia; fila.className = prioridad === 'alta' ? 'table-danger' : prioridad === 'media' ? 'table-warning' : 'table-success';
+        for (const campo of ["id_solicitud", "tipo", "descripcion", "laboratorio", "fecha_solicitada", "estado", "activo"]) agregarCelda(fila, typeof dato[campo] === 'string' ? traducir(dato[campo]) : dato[campo]);
+        if (puedeEditar && Number(dato.activo) !== 0) botonFila(fila, 'Editar', () => editar(dato));
+        if (esAdministrador && Number(dato.activo) !== 0) botonFila(fila, 'Dar de baja', () => baja(dato.id_solicitud));
+        botonFila(fila, 'Historial', () => historial(dato.id_solicitud));
+        filas.appendChild(fila);
     }
-
-    tbody.innerHTML = solicitudes.map(function(s) {
-        return '<tr>' +
-            '<td>' + s.id + '</td>' +
-            '<td>' + s.docente + '</td>' +
-            '<td>' + s.tipo + '</td>' +
-            '<td>' + s.descripcion + '</td>' +
-            '<td>' + s.laboratorio + '</td>' +
-            '<td>' + s.fecha + '</td>' +
-            '<td>' + getBadgeUrgencia(s.urgencia) + '</td>' +
-            '<td>' + getBadgeEstadoSolicitud(s.estado) + '</td>' +
-            '<td>' +
-                '<button class="btn btn-sm btn-outline-danger" onclick="eliminarSolicitud(' + s.id + ')">Eliminar</button>' +
-            '</td>' +
-        '</tr>';
-    }).join('');
 }
-
-function eliminarSolicitud(id) {
-    solicitudes = solicitudes.filter(function(s) { return s.id !== id; });
-    renderizarSolicitudes();
+function editar(dato) {
+    formulario.reset(); document.getElementById('registro_id').value = dato.id_solicitud;
+    document.getElementById('tipo').value = dato.tipo ?? '';
+    document.getElementById('descripcion').value = dato.descripcion ?? '';
+    document.getElementById('id_laboratorio').value = dato.id_laboratorio ?? '';
+    if (dato.id_laboratorio && document.getElementById('id_laboratorio').value === '') { const o = document.createElement('option'); o.value = dato.id_laboratorio; o.textContent = dato.id_laboratorio + ' (' + traducir('Inactivo') + ')'; document.getElementById('id_laboratorio').appendChild(o); document.getElementById('id_laboratorio').value = dato.id_laboratorio; }
+    document.getElementById('fecha_solicitada').value = dato.fecha_solicitada ?? '';
+    document.getElementById('hora_solicitada').value = dato.hora_solicitada ?? '';
+    document.getElementById('urgencia').value = dato.urgencia ?? '';
+    document.getElementById('estado').value = dato.estado ?? '';
+    document.getElementById('id_tecnico').value = dato.id_tecnico ?? '';
+    if (dato.id_tecnico && document.getElementById('id_tecnico').value === '') { const o = document.createElement('option'); o.value = dato.id_tecnico; o.textContent = dato.id_tecnico + ' (' + traducir('Inactivo') + ')'; document.getElementById('id_tecnico').appendChild(o); document.getElementById('id_tecnico').value = dato.id_tecnico; }
+    document.getElementById('nota_resolucion').value = dato.nota_resolucion ?? '';
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-
-    renderizarSolicitudes();
-
-    const btnGuardar = document.getElementById('btnGuardarSolicitud');
-    if (!btnGuardar) return;
-
-    btnGuardar.addEventListener('click', function() {
-
-        const docente = document.getElementById('docenteSolicitud');
-        const tipo = document.getElementById('tipoSolicitud');
-        const descripcion = document.getElementById('descripcionSolicitud');
-        const laboratorio = document.getElementById('laboratorioSolicitud');
-        const fecha = document.getElementById('fechaSolicitud');
-        const urgencia = document.getElementById('urgenciaSolicitud');
-        let valido = true;
-
-        const campos = [
-            { campo: docente, mensaje: 'Ingresá el nombre del docente.' },
-            { campo: tipo, mensaje: 'Seleccioná el tipo de solicitud.' },
-            { campo: laboratorio, mensaje: 'Ingresá el laboratorio o aula.' },
-            { campo: fecha, mensaje: 'Seleccioná una fecha.' },
-            { campo: urgencia, mensaje: 'Seleccioná la urgencia.' }
-        ];
-
-        campos.forEach(function(item) {
-            if (campoVacio(item.campo.value)) {
-                mostrarError(item.campo, item.mensaje);
-                valido = false;
-            } else {
-                mostrarValido(item.campo);
-            }
-        });
-
-        if (campoVacio(descripcion.value) || !longitudMinima(descripcion.value, 10)) {
-            mostrarError(descripcion, 'La descripción debe tener al menos 10 caracteres.');
-            valido = false;
-        } else {
-            mostrarValido(descripcion);
-        }
-
-        if (!valido) return;
-
-        const nuevaSolicitud = {
-            id: contadorIdSolicitud++,
-            docente: docente.value.trim(),
-            tipo: tipo.value,
-            descripcion: descripcion.value.trim(),
-            laboratorio: laboratorio.value.trim(),
-            fecha: new Date(fecha.value).toLocaleDateString('es-UY'),
-            urgencia: urgencia.value,
-            estado: 'pendiente'
-        };
-
-        solicitudes.push(nuevaSolicitud);
-        renderizarSolicitudes();
-
-        const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevaSolicitud'));
-        modal.hide();
-        document.getElementById('formNuevaSolicitud').reset();
-        campos.forEach(function(item) { limpiarValidacion(item.campo); });
-        limpiarValidacion(descripcion);
-    });
-
+async function baja(id) {
+    const motivo = prompt(traducir('Motivo de baja')); if (!motivo) return;
+    try { const resultado = await llamarApi('solicitudes', 'DELETE', {motivo}, id); mostrarMensaje(resultado.message); await cargar(); } catch (error) { mostrarMensaje(error.message, true); }
+}
+async function historial(id) {
+    try { const respuesta = await fetch('api/solicitudes.php?id=' + encodeURIComponent(id) + '&historial=1', {credentials:'same-origin'}); const json = await respuesta.json(); if (!respuesta.ok || json.status !== 'success') throw new Error(json.message); const panel = document.getElementById('historial'); panel.replaceChildren(); for (const evento of json.data) { const bloque = document.createElement('div'); bloque.className = 'card card-body mb-2'; for (const campo of ['fecha', 'hora', 'id_actor', 'accion']) { if (evento[campo] !== undefined) { const linea = document.createElement('p'); linea.textContent = traducir(campo) + ': ' + evento[campo]; bloque.appendChild(linea); } } const antes = JSON.parse(evento.detalle); for (const campo in antes) { const linea = document.createElement('p'); linea.textContent = traducir(campo) + ': ' + (antes[campo] ?? ''); bloque.appendChild(linea); } panel.appendChild(bloque); } } catch (error) { mostrarMensaje(error.message, true); }
+}
+formulario.addEventListener('submit', async evento => {
+    evento.preventDefault(); const datos = {};
+    datos.tipo = document.getElementById('tipo').value;
+    datos.descripcion = document.getElementById('descripcion').value;
+    datos.id_laboratorio = document.getElementById('id_laboratorio').value === '' ? null : Number(document.getElementById('id_laboratorio').value);
+    datos.fecha_solicitada = document.getElementById('fecha_solicitada').value;
+    datos.hora_solicitada = document.getElementById('hora_solicitada').value;
+    datos.urgencia = document.getElementById('urgencia').value;
+    datos.estado = document.getElementById('estado').value;
+    datos.id_tecnico = document.getElementById('id_tecnico').value === '' ? null : Number(document.getElementById('id_tecnico').value);
+    datos.nota_resolucion = document.getElementById('nota_resolucion').value;
+    const id = document.getElementById('registro_id').value;
+    try { const resultado = await llamarApi('solicitudes', id ? 'PUT' : 'POST', datos, id || null); mostrarMensaje(resultado.message); formulario.reset(); document.getElementById('registro_id').value = ''; await cargar(); } catch (error) { mostrarMensaje(error.message, true); }
 });
+document.getElementById('cancelar').addEventListener('click', () => { formulario.reset(); document.getElementById('registro_id').value = ''; });
+async function iniciar() {
+    try { const catalogos = (await llamarApi('catalogos')).data;
+    for (const dato of catalogos.laboratorios) { const o = document.createElement('option'); o.value = dato.id_laboratorio; o.textContent = dato.nombre; document.getElementById('id_laboratorio').appendChild(o); }
+    for (const dato of catalogos.tecnicos) { const o = document.createElement('option'); o.value = dato.id_usuario; o.textContent = dato.nombre_completo; document.getElementById('id_tecnico').appendChild(o); }
+    if (!puedeEditar) { document.getElementById('estado').disabled = true; document.getElementById('id_tecnico').disabled = true; document.getElementById('nota_resolucion').disabled = true; }
+        await cargar();
+    } catch (error) { mostrarMensaje(error.message, true); }
+}
+iniciar();

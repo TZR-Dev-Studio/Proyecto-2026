@@ -1,8 +1,8 @@
 <?php
 
 function verificarSesion(): void {
-    session_start();
-    if (!isset($_SESSION["usuario"])) {
+    if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+    if (!isset($_SESSION["id_usuario"])) {
         $mensaje = "Acceso Denegado: Sesión no iniciada";
         header("Location: login.php?" . "error=" . $mensaje);
         exit;
@@ -10,21 +10,19 @@ function verificarSesion(): void {
 }
 
 function verificarRol(string $rol): void {
-    if (!isset($_SESSION[$rol]) || $_SESSION[$rol] !== true) {
-        $mensaje = "Acceso Denegado: Rol incorrecto";
-        header("Location: login.php?" . "error=" . $mensaje);
-        exit;
-    }
+    verificarRolDisponible([$rol]);
 }
 
-function verificarMultiRol(): void {
-    $cantidadRoles = count($_SESSION["roles"] ?? []);
-
-    if ($cantidadRoles <= 1) {
-        $mensaje = "Acceso Denegado: Rol incorrecto";
-        header("Location: login.php?" . "error=" . $mensaje);
-        exit;
+function verificarRolDisponible(array $roles): void {
+    require_once __DIR__ . '/ApiComun.php';
+    try {
+        iniciarApi(conectarApi()); Token::generar();
+    } catch (Throwable $error) {
+        error_log((string) $error);
+        header('Location: login.php?error=No+se+pudo+verificar+el+acceso'); exit;
     }
+    foreach ($roles as $rol) {
+        if ($_SESSION[$rol] ?? false) return;
+    }
+    header('Location: login.php?error=Rol+sin+permiso'); exit;
 }
-
-?>

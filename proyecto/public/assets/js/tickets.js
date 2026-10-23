@@ -1,205 +1,63 @@
-const URL_API_TICKETS = 'api/tickets.php';
-
-function crearBadgeEstado(estado) {
-    const badges = {
-        'pendiente': { texto: 'Pendiente', clase: 'bg-warning text-dark' },
-        'en proceso': { texto: 'En proceso', clase: 'bg-primary' },
-        'resuelto': { texto: 'Resuelto', clase: 'bg-success' }
-    };
-    const badge = badges[estado];
-
-    const span = document.createElement('span');
-    if (badge) {
-        span.className = 'badge ' + badge.clase;
-        span.textContent = badge.texto;
-    } else {
-        span.textContent = estado;
+const formulario = document.getElementById('formulario');
+async function cargar() {
+    const respuesta = await llamarApi('tickets'); const filas = document.getElementById('filas'); filas.replaceChildren();
+    for (const dato of respuesta.data) {
+        const fila = document.createElement('tr'); const prioridad = dato.prioridad || dato.urgencia; fila.className = prioridad === 'alta' ? 'table-danger' : prioridad === 'media' ? 'table-warning' : 'table-success';
+        for (const campo of ["id_ticket", "descripcion", "laboratorio", "id_equipo", "estado", "prioridad", "fecha_inicio", "activo"]) agregarCelda(fila, typeof dato[campo] === 'string' ? traducir(dato[campo]) : dato[campo]);
+        if (puedeEditar && Number(dato.activo) !== 0) botonFila(fila, 'Editar', () => editar(dato));
+        if (esAdministrador && Number(dato.activo) !== 0) botonFila(fila, 'Dar de baja', () => baja(dato.id_ticket));
+        botonFila(fila, 'Historial', () => historial(dato.id_ticket));
+        filas.appendChild(fila);
     }
-    return span;
 }
-
-function crearBadgePrioridad(prioridad) {
-    const badges = {
-        'alta': { texto: 'Alta', clase: 'bg-danger' },
-        'media': { texto: 'Media', clase: 'bg-warning text-dark' },
-        'baja': { texto: 'Baja', clase: 'bg-success' }
-    };
-    const badge = badges[prioridad];
-
-    const span = document.createElement('span');
-    if (badge) {
-        span.className = 'badge ' + badge.clase;
-        span.textContent = badge.texto;
-    } else {
-        span.textContent = prioridad;
-    }
-    return span;
+function editar(dato) {
+    formulario.reset(); document.getElementById('registro_id').value = dato.id_ticket;
+    document.getElementById('descripcion').value = dato.descripcion ?? '';
+    document.getElementById('laboratorio').value = dato.laboratorio ?? '';
+    document.getElementById('id_equipo').value = dato.id_equipo ?? '';
+    if (dato.id_equipo && document.getElementById('id_equipo').value === '') { const o = document.createElement('option'); o.value = dato.id_equipo; o.textContent = dato.id_equipo + ' (' + traducir('Inactivo') + ')'; document.getElementById('id_equipo').appendChild(o); document.getElementById('id_equipo').value = dato.id_equipo; }
+    document.getElementById('prioridad').value = dato.prioridad ?? '';
+    document.getElementById('fecha_inicio').value = dato.fecha_inicio ?? '';
+    document.getElementById('hora_inicio').value = dato.hora_inicio ?? '';
+    document.getElementById('fecha_limite').value = dato.fecha_limite ?? '';
+    document.getElementById('estado').value = dato.estado ?? '';
+    document.getElementById('id_tecnico').value = dato.id_tecnico ?? '';
+    if (dato.id_tecnico && document.getElementById('id_tecnico').value === '') { const o = document.createElement('option'); o.value = dato.id_tecnico; o.textContent = dato.id_tecnico + ' (' + traducir('Inactivo') + ')'; document.getElementById('id_tecnico').appendChild(o); document.getElementById('id_tecnico').value = dato.id_tecnico; }
+    document.getElementById('nota_resolucion').value = dato.nota_resolucion ?? '';
+    document.getElementById('espera_insumo').checked = Number(dato.espera_insumo) === 1;
 }
-
-function mostrarAlertaTickets(tipo, mensaje) {
-    const contenedor = document.getElementById('alertaTickets');
-    if (!contenedor) return;
-    const div = document.createElement('div');
-    div.className = 'alert alert-' + tipo;
-    div.setAttribute('role', 'alert');
-    div.textContent = mensaje;
-    contenedor.replaceChildren(div);
+async function baja(id) {
+    const motivo = prompt(traducir('Motivo de baja')); if (!motivo) return;
+    try { const resultado = await llamarApi('tickets', 'DELETE', {motivo}, id); mostrarMensaje(resultado.message); await cargar(); } catch (error) { mostrarMensaje(error.message, true); }
 }
-
-function renderizarTickets(tickets) {
-    const tbody = document.getElementById('tablaTickets');
-    if (!tbody) return;
-
-    if (tickets.length === 0) {
-        const filaVacia = document.createElement('tr');
-        const celdaVacia = document.createElement('td');
-        celdaVacia.colSpan = 7;
-        celdaVacia.className = 'text-center text-muted py-3';
-        celdaVacia.textContent = 'No hay tickets registrados';
-        filaVacia.appendChild(celdaVacia);
-        tbody.replaceChildren(filaVacia);
-        return;
-    }
-
-    const filas = tickets.map(function(ticket) {
-        const fila = document.createElement('tr');
-        fila.setAttribute('data-estado', ticket.estado);
-        fila.setAttribute('data-prioridad', ticket.prioridad);
-
-        const celdaId = document.createElement('td');
-        celdaId.textContent = ticket.id_ticket;
-
-        const celdaDescripcion = document.createElement('td');
-        celdaDescripcion.textContent = ticket.descripcion;
-
-        const celdaLaboratorio = document.createElement('td');
-        celdaLaboratorio.textContent = ticket.laboratorio;
-
-        const celdaEstado = document.createElement('td');
-        celdaEstado.appendChild(crearBadgeEstado(ticket.estado));
-
-        const celdaPrioridad = document.createElement('td');
-        celdaPrioridad.appendChild(crearBadgePrioridad(ticket.prioridad));
-
-        const celdaFecha = document.createElement('td');
-        celdaFecha.textContent = ticket.fecha_inicio;
-
-        const celdaCreadoPor = document.createElement('td');
-        celdaCreadoPor.textContent = ticket.creadoPor;
-
-        fila.appendChild(celdaId);
-        fila.appendChild(celdaDescripcion);
-        fila.appendChild(celdaLaboratorio);
-        fila.appendChild(celdaEstado);
-        fila.appendChild(celdaPrioridad);
-        fila.appendChild(celdaFecha);
-        fila.appendChild(celdaCreadoPor);
-
-        return fila;
-    });
-
-    tbody.replaceChildren(...filas);
+async function historial(id) {
+    try { const respuesta = await fetch('api/tickets.php?id=' + encodeURIComponent(id) + '&historial=1', {credentials:'same-origin'}); const json = await respuesta.json(); if (!respuesta.ok || json.status !== 'success') throw new Error(json.message); const panel = document.getElementById('historial'); panel.replaceChildren(); for (const evento of json.data) { const bloque = document.createElement('div'); bloque.className = 'card card-body mb-2'; for (const campo of ['fecha', 'hora', 'id_actor', 'accion']) { if (evento[campo] !== undefined) { const linea = document.createElement('p'); linea.textContent = traducir(campo) + ': ' + evento[campo]; bloque.appendChild(linea); } } const antes = JSON.parse(evento.detalle); for (const campo in antes) { const linea = document.createElement('p'); linea.textContent = traducir(campo) + ': ' + (antes[campo] ?? ''); bloque.appendChild(linea); } panel.appendChild(bloque); } } catch (error) { mostrarMensaje(error.message, true); }
 }
-
-function obtenerTickets() {
-    fetch(URL_API_TICKETS, { method: 'GET', credentials: 'same-origin' })
-        .then(function(respuesta) {
-            return respuesta.json().then(function(datos) {
-                if (!respuesta.ok) throw new Error(datos.error || 'No se pudieron obtener los tickets.');
-                return datos;
-            });
-        })
-        .then(function(tickets) {
-            renderizarTickets(tickets);
-        })
-        .catch(function(error) {
-            mostrarAlertaTickets('danger', error.message);
-        });
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-
-    obtenerTickets();
-
-    const formFiltros = document.getElementById('formFiltros');
-    if (formFiltros) {
-        formFiltros.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const estado = document.getElementById('filtroEstado').value;
-            const prioridad = document.getElementById('filtroPrioridad').value;
-            const filas = document.querySelectorAll('#tablaTickets tr[data-estado]');
-
-            filas.forEach(function(fila) {
-                const coincideEstado = estado === '' || fila.dataset.estado === estado;
-                const coincidePrioridad = prioridad === '' || fila.dataset.prioridad === prioridad;
-                fila.classList.toggle('d-none', !(coincideEstado && coincidePrioridad));
-            });
-        });
-    }
-
-    const btnGuardar = document.getElementById('btnGuardarTicket');
-    if (!btnGuardar) return;
-
-    btnGuardar.addEventListener('click', function() {
-
-        const descripcion = document.getElementById('descripcionTicket');
-        const laboratorio = document.getElementById('laboratorioTicket');
-        const prioridad = document.getElementById('prioridadTicket');
-        let valido = true;
-
-        if (campoVacio(descripcion.value) || !longitudMinima(descripcion.value, 10)) {
-            mostrarError(descripcion, 'La descripción debe tener al menos 10 caracteres.');
-            valido = false;
-        } else {
-            mostrarValido(descripcion);
-        }
-
-        if (campoVacio(laboratorio.value)) {
-            mostrarError(laboratorio, 'Ingresá el laboratorio o aula.');
-            valido = false;
-        } else {
-            mostrarValido(laboratorio);
-        }
-
-        if (campoVacio(prioridad.value)) {
-            mostrarError(prioridad, 'Seleccioná una prioridad.');
-            valido = false;
-        } else {
-            mostrarValido(prioridad);
-        }
-
-        if (!valido) return;
-
-        fetch(URL_API_TICKETS, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                descripcion: descripcion.value.trim(),
-                laboratorio: laboratorio.value.trim(),
-                prioridad: prioridad.value
-            })
-        })
-            .then(function(respuesta) {
-                return respuesta.json().then(function(datos) {
-                    if (!respuesta.ok) throw new Error(datos.error || 'No se pudo registrar el ticket.');
-                    return datos;
-                });
-            })
-            .then(function(datos) {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoTicket'));
-                modal.hide();
-                document.getElementById('formNuevoTicket').reset();
-                [descripcion, laboratorio, prioridad].forEach(function(campo) {
-                    limpiarValidacion(campo);
-                });
-                mostrarAlertaTickets('success', datos.mensaje);
-                obtenerTickets();
-            })
-            .catch(function(error) {
-                mostrarAlertaTickets('danger', error.message);
-            });
-    });
-
+formulario.addEventListener('submit', async evento => {
+    evento.preventDefault(); const datos = {};
+    datos.descripcion = document.getElementById('descripcion').value;
+    datos.laboratorio = document.getElementById('laboratorio').value;
+    datos.id_equipo = document.getElementById('id_equipo').value === '' ? null : Number(document.getElementById('id_equipo').value);
+    datos.prioridad = document.getElementById('prioridad').value;
+    datos.fecha_inicio = document.getElementById('fecha_inicio').value;
+    datos.hora_inicio = document.getElementById('hora_inicio').value;
+    datos.fecha_limite = document.getElementById('fecha_limite').value;
+    datos.estado = document.getElementById('estado').value;
+    datos.id_tecnico = document.getElementById('id_tecnico').value === '' ? null : Number(document.getElementById('id_tecnico').value);
+    datos.nota_resolucion = document.getElementById('nota_resolucion').value;
+    datos.espera_insumo = document.getElementById('espera_insumo').checked ? 1 : 0;
+    const id = document.getElementById('registro_id').value;
+    try { const resultado = await llamarApi('tickets', id ? 'PUT' : 'POST', datos, id || null); mostrarMensaje(resultado.message); formulario.reset(); document.getElementById('registro_id').value = ''; await cargar(); } catch (error) { mostrarMensaje(error.message, true); }
 });
+document.getElementById('cancelar').addEventListener('click', () => { formulario.reset(); document.getElementById('registro_id').value = ''; });
+async function iniciar() {
+    try { const catalogos = (await llamarApi('catalogos')).data;
+        document.getElementById('hora_inicio').value = catalogos.reloj.hora;
+        document.getElementById('fecha_inicio').value = catalogos.reloj.fecha;
+    for (const dato of catalogos.equipos) { const o = document.createElement('option'); o.value = dato.id_equipo; o.textContent = dato.codigo_inventario; document.getElementById('id_equipo').appendChild(o); }
+    for (const dato of catalogos.tecnicos) { const o = document.createElement('option'); o.value = dato.id_usuario; o.textContent = dato.nombre_completo; document.getElementById('id_tecnico').appendChild(o); }
+    if (!puedeEditar) { document.getElementById('estado').disabled = true; document.getElementById('id_tecnico').disabled = true; document.getElementById('nota_resolucion').disabled = true; }
+        await cargar();
+    } catch (error) { mostrarMensaje(error.message, true); }
+}
+iniciar();

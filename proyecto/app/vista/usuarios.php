@@ -1,164 +1,65 @@
-<?php
-/**
- * Vista: Gestión de Usuarios (Panel Administrador)
- * Los usuarios se obtienen y se registran desde el frontend mediante fetch()
- * contra proyecto/public/api/usuarios.php. Esta vista no consulta la base de datos.
- */
-?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SGRSI - Usuarios</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/styles.css">
+<meta charset="UTF-8">
+<meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrfToken']); ?>">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SGRSI - Usuarios</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="assets/css/styles.css" rel="stylesheet">
 </head>
-<body>
-
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="#">SGRSI</a>
-            <div class="collapse navbar-collapse">
-                <span class="navbar-text text-white me-3">
-                    Panel Administrador - <?php echo htmlspecialchars($_SESSION["usuario"]); ?>
-                </span>
-                <a class="btn btn-outline-light btn-sm" href="cerrarSesion.php">Cerrar sesión</a>
-            </div>
-        </div>
-    </nav>
-
-    <main class="container mt-4">
-
-        <header class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h1 class="fs-4 fw-bold">Gestión de Usuarios</h1>
-                <p class="text-muted mb-0">Solo el administrador puede registrar usuarios</p>
-            </div>
-            <button class="btn btn-primary" id="btnNuevoUsuario">
-                + Nuevo usuario
-            </button>
-        </header>
-
-        <div id="alertaUsuarios"></div>
-
-        <section class="card">
-            <div class="card-header">
-                <h2 class="fs-6 fw-bold mb-0">Usuarios del sistema</h2>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">Usuario</th>
-                                <th scope="col">Nombre completo</th>
-                                <th scope="col">Rol</th>
-                                <th scope="col">Email</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tablaUsuarios">
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-3">
-                                    Cargando usuarios...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- Modal nuevo usuario (registra en la base de datos mediante fetch a api/usuarios.php) -->
-    <div class="modal fade" id="modalNuevoUsuario" tabindex="-1" aria-labelledby="tituloModalUsuario" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 class="modal-title fs-5" id="tituloModalUsuario">Nuevo usuario</h2>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="formNuevoUsuario" novalidate>
-
-                        <div class="mb-3">
-                            <label for="nombreCompleto" class="form-label">Nombre completo</label>
-                            <input
-                                type="text"
-                                class="form-control"
-                                id="nombreCompleto"
-                                placeholder="Ej: Juan González"
-                                required
-                            >
-                            <div class="invalid-feedback">Ingresá el nombre completo.</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="nombreUsuario" class="form-label">Nombre de usuario</label>
-                            <input
-                                type="text"
-                                class="form-control"
-                                id="nombreUsuario"
-                                placeholder="Ej: jgonzalez"
-                                required
-                                minlength="3"
-                            >
-                            <div class="invalid-feedback">El usuario debe tener al menos 3 caracteres.</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="emailUsuario" class="form-label">Email</label>
-                            <input
-                                type="email"
-                                class="form-control"
-                                id="emailUsuario"
-                                placeholder="Ej: jgonzalez@iti.edu.uy"
-                                required
-                            >
-                            <div class="invalid-feedback">Ingresá un email válido.</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="rolUsuario" class="form-label">Rol</label>
-                            <select class="form-select" id="rolUsuario" required>
-                                <option value="">Seleccioná un rol</option>
-                                <option value="administrador">Administrador</option>
-                                <option value="tecnico">Técnico / Soporte</option>
-                                <option value="solicitante">Solicitante (Docente/Funcionario)</option>
-                            </select>
-                            <div class="invalid-feedback">Seleccioná un rol.</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="passwordUsuario" class="form-label">Contraseña</label>
-                            <input
-                                type="password"
-                                class="form-control"
-                                id="passwordUsuario"
-                                required
-                                minlength="6"
-                            >
-                            <div class="invalid-feedback">La contraseña debe tener al menos 6 caracteres.</div>
-                        </div>
-
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="btnGuardarUsuario">Guardar usuario</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <footer class="text-center text-muted py-3 mt-4 border-top">
-        <small>SGRSI &copy; 2026 - TZR DevStudio - ITI CETP</small>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/validaciones.js"></script>
-    <script src="assets/js/usuarios.js"></script>
-</body>
+<body><?php require __DIR__ . '/navegacion.php'; ?><main class="container py-4">
+<h1 data-i18n="Usuarios">Usuarios</h1>
+<div id="mensaje" role="status" aria-live="polite">
+</div>
+<form id="formulario" class="card card-body mb-4">
+<input type="hidden" id="registro_id">
+<label for="nombreUsuario" data-i18n="Usuario">Usuario</label>
+<input class="form-control mb-3" id="nombreUsuario" minlength="3" maxlength="50" required>
+<label for="nombreCompleto" data-i18n="Nombre completo">Nombre completo</label>
+<input class="form-control mb-3" id="nombreCompleto" maxlength="100" required>
+<label for="email" data-i18n="Email">Email</label>
+<input class="form-control mb-3" id="email" type="email" maxlength="100" required>
+<fieldset class="mb-3">
+<legend class="fs-6" data-i18n="Roles">Roles</legend>
+<label>
+<input type="checkbox" name="roles" value="administrador"> <span data-i18n="administrador">Administrador</span>
+</label>
+<label>
+<input type="checkbox" name="roles" value="tecnico"> <span data-i18n="tecnico">Técnico</span>
+</label>
+<label>
+<input type="checkbox" name="roles" value="solicitante"> <span data-i18n="solicitante">Solicitante</span>
+</label>
+</fieldset>
+<label for="password" data-i18n="Contraseña">Contraseña</label>
+<input class="form-control" id="password" type="password" minlength="6" maxlength="72" required autocomplete="new-password">
+<p data-i18n="Vacía al editar conserva la contraseña.">Vacía al editar conserva la contraseña.</p>
+<label for="activo" data-i18n="Activo">Activo</label>
+<select class="form-select mb-3" id="activo">
+<option value="1" data-i18n="Sí">Sí</option>
+<option value="0" data-i18n="No">No</option>
+</select>
+<div>
+<button class="btn btn-primary" data-i18n="Guardar">Guardar</button> <button type="button" class="btn btn-secondary" id="nuevo" data-i18n="Nuevo">Nuevo</button>
+</div>
+</form>
+<div class="table-responsive">
+<table class="table table-striped">
+<thead>
+<tr>
+<th>ID</th>
+<th data-i18n="Usuario">Usuario</th>
+<th data-i18n="Nombre completo">Nombre completo</th>
+<th data-i18n="Email">Email</th>
+<th data-i18n="Roles">Roles</th>
+<th data-i18n="Activo">Activo</th>
+<th data-i18n="Acciones">Acciones</th>
+</tr>
+</thead>
+<tbody id="listado">
+</tbody>
+</table>
+</div>
+</main><script src="assets/js/api.js"></script><script src="assets/js/idioma.js"></script><script src="assets/js/usuarios.js"></script></body>
 </html>

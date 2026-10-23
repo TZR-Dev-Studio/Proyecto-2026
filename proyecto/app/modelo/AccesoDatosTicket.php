@@ -22,24 +22,5 @@ class AccesoDatosTicket {
         $consulta = $this->conexion->query($sql);
         return $consulta->fetchAll(PDO::FETCH_ASSOC);
     }
-
-    public function crearTicket(string $descripcion, string $laboratorio, string $prioridad, string $nombreUsuario): bool
-    {
-        $sql = "
-            INSERT INTO TICKET (descripcion, laboratorio, estado, prioridad, fecha_inicio, id_usuario)
-            VALUES (
-                :descripcion, :laboratorio, 'pendiente', :prioridad, CURDATE(),
-                (SELECT id_usuario FROM USUARIO WHERE nombre_usuario = :usuario)
-            )
-        ";
-
-        $consulta = $this->conexion->prepare($sql);
-        return $consulta->execute([
-            "descripcion" => $descripcion,
-            "laboratorio" => $laboratorio,
-            "prioridad" => $prioridad,
-            "usuario" => $nombreUsuario,
-        ]);
-    }
 }
 ?>

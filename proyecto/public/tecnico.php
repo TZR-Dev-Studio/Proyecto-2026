@@ -1,6 +1,4 @@
 <?php
-require_once __DIR__ . "/../app/controlador/ControlAcceso.php";
-verificarSesion();
-verificarRol("tecnico");
-require_once __DIR__ . "/../app/vista/tecnico.php";
-?>
+require_once __DIR__ . '/../app/controlador/ControlAcceso.php';
+verificarSesion(); verificarRol('tecnico');
+header('Location: inicio.php'); exit;

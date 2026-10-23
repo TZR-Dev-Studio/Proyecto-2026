@@ -1,192 +1,50 @@
-const URL_API_USUARIOS = 'api/usuarios.php';
-
-function crearBadgeRol(rol) {
-    const badges = {
-        'administrador': { texto: 'Administrador', clase: 'bg-danger' },
-        'tecnico': { texto: 'Técnico', clase: 'bg-primary' },
-        'solicitante': { texto: 'Solicitante', clase: 'bg-success' }
-    };
-    const badge = badges[rol];
-
-    const span = document.createElement('span');
-    if (badge) {
-        span.className = 'badge ' + badge.clase;
-        span.textContent = badge.texto;
-    } else {
-        span.textContent = rol;
-    }
-    return span;
+function nuevoUsuario() {
+    document.getElementById('formulario').reset();
+    document.getElementById('registro_id').value = '';
+    document.getElementById('nombreUsuario').disabled = false;
+    document.getElementById('password').required = true;
 }
-
-function mostrarAlertaUsuarios(tipo, mensaje) {
-    const contenedor = document.getElementById('alertaUsuarios');
-    if (!contenedor) return;
-    const div = document.createElement('div');
-    div.className = 'alert alert-' + tipo;
-    div.setAttribute('role', 'alert');
-    div.textContent = mensaje;
-    contenedor.replaceChildren(div);
+function editarUsuario(fila) {
+    document.getElementById('registro_id').value = fila.id_usuario;
+    document.getElementById('nombreUsuario').value = fila.nombre_usuario;
+    document.getElementById('nombreUsuario').disabled = true;
+    document.getElementById('nombreCompleto').value = fila.nombre_completo;
+    document.getElementById('email').value = fila.email;
+    document.getElementById('activo').value = Number(fila.activo);
+    document.getElementById('password').value = '';
+    document.getElementById('password').required = false;
+    document.querySelectorAll('input[name="roles"]').forEach(function(campo) { campo.checked = fila.roles.includes(campo.value); });
+    document.getElementById('formulario').scrollIntoView();
 }
-
-function renderizarUsuarios(usuarios) {
-    const tbody = document.getElementById('tablaUsuarios');
-    if (!tbody) return;
-
-    if (usuarios.length === 0) {
-        const filaVacia = document.createElement('tr');
-        const celdaVacia = document.createElement('td');
-        celdaVacia.colSpan = 5;
-        celdaVacia.className = 'text-center text-muted py-3';
-        celdaVacia.textContent = 'No hay usuarios registrados';
-        filaVacia.appendChild(celdaVacia);
-        tbody.replaceChildren(filaVacia);
-        return;
-    }
-
-    const filas = usuarios.map(function(usuario) {
-        const rol = (usuario.roles || '').split(',')[0];
-
-        const fila = document.createElement('tr');
-
-        const celdaId = document.createElement('td');
-        celdaId.textContent = usuario.id_usuario;
-
-        const celdaUsuario = document.createElement('td');
-        celdaUsuario.textContent = usuario.nombre_usuario;
-
-        const celdaNombre = document.createElement('td');
-        celdaNombre.textContent = usuario.nombre_completo;
-
-        const celdaRol = document.createElement('td');
-        celdaRol.appendChild(crearBadgeRol(rol));
-
-        const celdaEmail = document.createElement('td');
-        celdaEmail.textContent = usuario.email;
-
-        fila.appendChild(celdaId);
-        fila.appendChild(celdaUsuario);
-        fila.appendChild(celdaNombre);
-        fila.appendChild(celdaRol);
-        fila.appendChild(celdaEmail);
-
-        return fila;
-    });
-
-    tbody.replaceChildren(...filas);
-}
-
-function obtenerUsuarios() {
-    fetch(URL_API_USUARIOS, { method: 'GET', credentials: 'same-origin' })
-        .then(function(respuesta) {
-            return respuesta.json().then(function(datos) {
-                if (!respuesta.ok) throw new Error(datos.error || 'No se pudieron obtener los usuarios.');
-                return datos;
-            });
-        })
-        .then(function(usuarios) {
-            renderizarUsuarios(usuarios);
-        })
-        .catch(function(error) {
-            mostrarAlertaUsuarios('danger', error.message);
+async function cargarUsuarios() {
+    const filas = (await llamarApi('usuarios')).data;
+    const listado = document.getElementById('listado'); listado.replaceChildren();
+    filas.forEach(function(fila) {
+        const tr = document.createElement('tr');
+        agregarCelda(tr, fila.id_usuario); agregarCelda(tr, fila.nombre_usuario);
+        agregarCelda(tr, fila.nombre_completo); agregarCelda(tr, fila.email);
+        agregarCelda(tr, fila.roles.map(function(rol) { return traducir(rol); }).join(', '));
+        agregarCelda(tr, traducir(Number(fila.activo) ? 'Sí' : 'No'));
+        const acciones = document.createElement('td');
+        botonFila(acciones, 'Editar', function() { editarUsuario(fila); });
+        if (Number(fila.activo)) botonFila(acciones, 'Dar de baja', async function() {
+            if (!confirm(traducir('¿Registrar baja lógica?'))) return;
+            try { const r = await llamarApi('usuarios', 'DELETE', {}, fila.id_usuario); mostrarMensaje(r.message); await cargarUsuarios(); } catch(e) { mostrarMensaje(e.message, true); }
         });
+        tr.appendChild(acciones); listado.appendChild(tr);
+    });
 }
-
-function validarEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
 document.addEventListener('DOMContentLoaded', function() {
-
-    obtenerUsuarios();
-
-    const btnNuevo = document.getElementById('btnNuevoUsuario');
-    if (btnNuevo) {
-        btnNuevo.addEventListener('click', function() {
-            const modal = new bootstrap.Modal(document.getElementById('modalNuevoUsuario'));
-            modal.show();
-        });
-    }
-
-    const btnGuardar = document.getElementById('btnGuardarUsuario');
-    if (!btnGuardar) return;
-
-    btnGuardar.addEventListener('click', function() {
-
-        const nombreCompleto = document.getElementById('nombreCompleto');
-        const nombreUsuario = document.getElementById('nombreUsuario');
-        const email = document.getElementById('emailUsuario');
-        const rol = document.getElementById('rolUsuario');
-        const password = document.getElementById('passwordUsuario');
-        let valido = true;
-
-        if (campoVacio(nombreCompleto.value)) {
-            mostrarError(nombreCompleto, 'Ingresá el nombre completo.');
-            valido = false;
-        } else {
-            mostrarValido(nombreCompleto);
-        }
-
-        if (campoVacio(nombreUsuario.value) || !longitudMinima(nombreUsuario.value, 3)) {
-            mostrarError(nombreUsuario, 'El usuario debe tener al menos 3 caracteres.');
-            valido = false;
-        } else {
-            mostrarValido(nombreUsuario);
-        }
-
-        if (campoVacio(email.value) || !validarEmail(email.value)) {
-            mostrarError(email, 'Ingresá un email válido.');
-            valido = false;
-        } else {
-            mostrarValido(email);
-        }
-
-        if (campoVacio(rol.value)) {
-            mostrarError(rol, 'Seleccioná un rol.');
-            valido = false;
-        } else {
-            mostrarValido(rol);
-        }
-
-        if (campoVacio(password.value) || !longitudMinima(password.value, 6)) {
-            mostrarError(password, 'La contraseña debe tener al menos 6 caracteres.');
-            valido = false;
-        } else {
-            mostrarValido(password);
-        }
-
-        if (!valido) return;
-
-        fetch(URL_API_USUARIOS, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                nombreCompleto: nombreCompleto.value.trim(),
-                nombreUsuario: nombreUsuario.value.trim(),
-                email: email.value.trim(),
-                rol: rol.value,
-                password: password.value
-            })
-        })
-            .then(function(respuesta) {
-                return respuesta.json().then(function(datos) {
-                    if (!respuesta.ok) throw new Error(datos.error || 'No se pudo registrar el usuario.');
-                    return datos;
-                });
-            })
-            .then(function(datos) {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoUsuario'));
-                modal.hide();
-                document.getElementById('formNuevoUsuario').reset();
-                [nombreCompleto, nombreUsuario, email, rol, password].forEach(function(campo) {
-                    limpiarValidacion(campo);
-                });
-                mostrarAlertaUsuarios('success', datos.mensaje);
-                obtenerUsuarios();
-            })
-            .catch(function(error) {
-                mostrarAlertaUsuarios('danger', error.message);
-            });
+    const form = document.getElementById('formulario');
+    document.getElementById('nuevo').addEventListener('click', nuevoUsuario);
+    form.addEventListener('submit', async function(evento) {
+        evento.preventDefault(); if (!form.reportValidity()) return;
+        const roles = [];
+        document.querySelectorAll('input[name="roles"]:checked').forEach(function(campo) { roles.push(campo.value); });
+        if (!roles.length) { mostrarMensaje('Seleccione al menos un rol.', true); return; }
+        const id = document.getElementById('registro_id').value;
+        const datos = {nombreUsuario: document.getElementById('nombreUsuario').value.trim(), nombreCompleto: document.getElementById('nombreCompleto').value.trim(), email: document.getElementById('email').value.trim(), password: document.getElementById('password').value, roles: roles, activo: Number(document.getElementById('activo').value)};
+        try { const r = await llamarApi('usuarios', id ? 'PUT' : 'POST', datos, id || null); mostrarMensaje(r.message); nuevoUsuario(); await cargarUsuarios(); } catch(e) { mostrarMensaje(e.message, true); }
     });
-
+    cargarUsuarios().catch(function(e) { mostrarMensaje(e.message, true); });
 });

@@ -10,23 +10,17 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     exit;
 }
 
-$usuario = trim($_POST["usuario"] ?? "");
-$clave = $_POST["password"] ?? "";
+if (!isset($_POST['usuario'], $_POST['password']) || !is_string($_POST['usuario']) || !is_string($_POST['password'])) {
+    header('Location: login.php?error=Datos+invalidos'); exit;
+}
+$usuario = trim($_POST["usuario"]);
+$clave = $_POST["password"];
+if (strlen($usuario) < 3 || strlen($usuario) > 50 || strlen($clave) < 6 || strlen($clave) > 72) {
+    header('Location: login.php?error=Datos+invalidos'); exit;
+}
 
 try {
-    $rutaEnv = __DIR__ . "/../../.env";
-    $env = [];
-    if (file_exists($rutaEnv)) {
-        foreach (file($rutaEnv, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $linea) {
-            $linea = trim($linea);
-            if ($linea === "" || str_starts_with($linea, "#") || !str_contains($linea, "=")) {
-                continue;
-            }
-            [$nombreClave, $valor] = array_map("trim", explode("=", $linea, 2));
-            $env[$nombreClave] = $valor;
-        }
-    }
-
+    $env = require __DIR__ . '/../../config/config.php';
     $conectorPDO = new ConectorPDO($env["DB_HOST"] ?? "", $env["DB_USER"] ?? "", $env["DB_PASS"] ?? "", $env["DB_NAME"] ?? "");
     $conexion = $conectorPDO->establecerConexion();
     $accesoDatosUsuario = new AccesoDatosUsuario($conexion);
@@ -48,29 +42,16 @@ if ($usuarioAutenticado === null) {
 
 session_start();
 session_regenerate_id(true);
+$_SESSION["id_usuario"] = $usuarioAutenticado->getIdUsuario();
 $_SESSION["usuario"] = $usuarioAutenticado->getUsuario();
 $_SESSION["roles"] = $usuarioAutenticado->getRoles();
 $_SESSION["administrador"] = $usuarioAutenticado->esAdministrador();
 $_SESSION["tecnico"] = $usuarioAutenticado->esTecnico();
 $_SESSION["solicitante"] = $usuarioAutenticado->esSolicitante();
 
-if ($_SESSION["administrador"] && $_SESSION["tecnico"] && $_SESSION["solicitante"]) {
-    header("Location: panelRoles.php");
-} elseif ($_SESSION["administrador"] && $_SESSION["tecnico"]) {
-    header("Location: panelRoles.php");
-} elseif ($_SESSION["administrador"] && $_SESSION["solicitante"]) {
-    header("Location: panelRoles.php");
-} elseif ($_SESSION["tecnico"] && $_SESSION["solicitante"]) {
-    header("Location: panelRoles.php");
-} elseif ($_SESSION["administrador"]) {
-    header("Location: administrador.php");
-} elseif ($_SESSION["tecnico"]) {
-    header("Location: tecnico.php");
-} elseif ($_SESSION["solicitante"]) {
-    header("Location: solicitante.php");
+if ($_SESSION["administrador"] || $_SESSION["tecnico"] || $_SESSION["solicitante"]) {
+    header("Location: inicio.php");
 } else {
-    $mensaje = "Acceso Denegado: Usuario sin roles asignados";
-    header("Location: login.php?" . "error=" . $mensaje);
+    header("Location: login.php?error=Usuario+sin+roles+asignados");
 }
 exit;
-?>
