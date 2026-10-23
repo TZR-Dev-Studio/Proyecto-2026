@@ -1,17 +1,21 @@
 <?php
 
 class Usuario {
+    private int $idUsuario;
     private string $usuario;
     private string $claveHash;
     private bool $activo;
     private array $roles;
 
-    public function __construct(string $usuario, string $claveHash, bool $activo, array $roles) {
+    public function __construct(string $usuario, string $claveHash, bool $activo, array $roles, int $idUsuario = 0) {
+        $this->idUsuario = $idUsuario;
         $this->usuario = $usuario;
         $this->claveHash = $claveHash;
         $this->activo = $activo;
         $this->roles = $roles;
     }
+
+    public function getIdUsuario(): int { return $this->idUsuario; }
 
     public function getUsuario(): string {
         return $this->usuario;
@@ -41,5 +45,3 @@ class Usuario {
         return in_array("solicitante", $this->roles);
     }
 }
-
-?>
